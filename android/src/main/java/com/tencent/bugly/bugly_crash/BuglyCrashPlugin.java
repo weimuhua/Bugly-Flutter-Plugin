@@ -1,14 +1,19 @@
 package com.tencent.bugly.bugly_crash;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+
+import com.tencent.bugly.crashreport.BuglyLog;
+import com.tencent.bugly.crashreport.CrashReport;
+
+import java.util.Map;
+
+import androidx.annotation.NonNull;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
-import com.tencent.bugly.crashreport.CrashReport;
-import android.content.Context;
-import java.util.Map;
-import com.tencent.bugly.crashreport.BuglyLog;
 
 /**
  * Description:bugly oa futter plugin
@@ -16,17 +21,13 @@ import com.tencent.bugly.crashreport.BuglyLog;
  * @author rockypzhang
  * @since 2019/5/28
  */
-public class BuglyCrashPlugin implements MethodCallHandler {
+public class BuglyCrashPlugin implements MethodCallHandler, FlutterPlugin {
     /**
      * Plugin registration.
      */
+    @SuppressLint("StaticFieldLeak")
     private static Context mContext;
-
-    public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "bugly");
-        mContext = registrar.activeContext();
-        channel.setMethodCallHandler(new BuglyCrashPlugin());
-    }
+    private MethodChannel mMethodChannel;
 
     /**
      * flutter层调用方法的native层实现
@@ -35,7 +36,7 @@ public class BuglyCrashPlugin implements MethodCallHandler {
      * @param result 返回结果
      */
     @Override
-    public void onMethodCall(MethodCall call, Result result) {
+    public void onMethodCall(MethodCall call, @NonNull Result result) {
         if (call.method.equals("getPlatformVersion")) {
             result.success("Android " + android.os.Build.VERSION.RELEASE);
         } else if (call.method.equals("initCrashReport")) {
@@ -45,6 +46,7 @@ public class BuglyCrashPlugin implements MethodCallHandler {
                 appId = call.argument("appId");
             }
             if (call.hasArgument("isDebug")) {
+                //noinspection ConstantConditions
                 isDebug = call.argument("isDebug");
                 BuglyCrashPluginLog.isEnable = isDebug;
             }
@@ -93,6 +95,7 @@ public class BuglyCrashPlugin implements MethodCallHandler {
         } else if (call.method.equals("setUserSceneTag")) {
             int userSceneTag = 0;
             if (call.hasArgument("userSceneTag")) {
+                //noinspection ConstantConditions
                 userSceneTag = call.argument("userSceneTag");
             }
             CrashReport.setUserSceneTag(mContext, userSceneTag);
@@ -126,7 +129,7 @@ public class BuglyCrashPlugin implements MethodCallHandler {
             }
             BuglyCrashPluginLog.d("url:" + url);
         } else if (call.method.contains("setDeviceId")) {
-            String deviceId = "";
+            String deviceId;
             if (call.hasArgument("deviceId")) {
                 deviceId = call.argument("deviceId");
                 CrashReport.setDeviceId(mContext, deviceId);
@@ -140,7 +143,6 @@ public class BuglyCrashPlugin implements MethodCallHandler {
      * 打印上报用户自定义日志
      *
      * @param call    flutter方法回调
-     * @param content 内容
      */
     private void buglyLog(MethodCall call) {
         String tag = "";
@@ -151,17 +153,35 @@ public class BuglyCrashPlugin implements MethodCallHandler {
         if (call.hasArgument("content")) {
             content = call.argument("content");
         }
-        if (call.method.equals("logd")) {
-            BuglyLog.d(tag, content);
-        } else if (call.method.equals("logi")) {
-            BuglyLog.i(tag, content);
-        } else if (call.method.equals("logv")) {
-            BuglyLog.v(tag, content);
-        } else if (call.method.equals("logw")) {
-            BuglyLog.w(tag, content);
-        } else if (call.method.equals("loge")) {
-            BuglyLog.e(tag, content);
+        switch (call.method) {
+            case "logd":
+                BuglyLog.d(tag, content);
+                break;
+            case "logi":
+                BuglyLog.i(tag, content);
+                break;
+            case "logv":
+                BuglyLog.v(tag, content);
+                break;
+            case "logw":
+                BuglyLog.w(tag, content);
+                break;
+            case "loge":
+                BuglyLog.e(tag, content);
+                break;
         }
         BuglyCrashPluginLog.d("tag:" + tag + " content:" + content);
+    }
+
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        mContext = binding.getApplicationContext();
+        mMethodChannel = new MethodChannel(binding.getBinaryMessenger(), "bugly");
+        mMethodChannel.setMethodCallHandler(new BuglyCrashPlugin());
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        mMethodChannel.setMethodCallHandler(null);
     }
 }
