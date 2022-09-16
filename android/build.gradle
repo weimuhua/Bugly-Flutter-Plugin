@@ -3,26 +3,34 @@ version '1.0-SNAPSHOT'
 
 buildscript {
     repositories {
-        google()
-        jcenter()
+        maven { url "https://mirrors.tencent.com/nexus/repository/maven-public/"}
+        maven { url "https://maven.aliyun.com/repository/central"}
+        maven { url "https://maven.aliyun.com/repository/google"}
+        maven { url "https://maven.aliyun.com/repository/gradle-plugin"}
+        maven { url "https://maven.aliyun.com/repository/jcenter"}
+        maven { url "https://jitpack.io" }
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.android.tools.build:gradle:4.2.2'
     }
 }
 
 rootProject.allprojects {
     repositories {
-        google()
-        jcenter()
+        maven { url "https://mirrors.tencent.com/nexus/repository/maven-public/"}
+        maven { url "https://maven.aliyun.com/repository/central"}
+        maven { url "https://maven.aliyun.com/repository/google"}
+        maven { url "https://maven.aliyun.com/repository/gradle-plugin"}
+        maven { url "https://maven.aliyun.com/repository/jcenter"}
+        maven { url "https://jitpack.io" }
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 31
 
     defaultConfig {
         minSdkVersion 16
